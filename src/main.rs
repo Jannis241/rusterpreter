@@ -9,6 +9,12 @@ mod lexer;
 fn main() {
     let input = r#"
 
+    setze x auf 5;
+
+    setzte y auf 3;
+
+    schreibe: 
+
     funktion add(x, y) {
         return x + y
     }

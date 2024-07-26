@@ -1,0 +1,48 @@
+setzte fufu auf "cool";
+
+
+setze a auf 3;
+setze b auf 5;
+
+
+
+funktion ist_tier_cool(tier) {
+    wenn tier ist gleich "dede" {
+        return wahr
+    }
+    wenn tier ist gleich "fufu" {
+        return wahr
+    }
+    sonst {
+        return falsch
+    }
+}
+
+
+setze c auf a + c;
+
+
+schreibe: c;
+
+
+
+wenn c ist gleich 8 {
+    schreibe: "richtig";
+}
+sonst {
+    schreibe: "falsch";
+}
+
+
+setzte ist_fufu_cool auf wahr;
+
+
+wenn ist_fufu_cool ist gleich wahr {
+    schreibe: "richtig";
+}
+sonst {
+    schreibe: "falsch";
+}
+
+
+setzte ist_fufu_cool auf ist_tier_cool("fufu");

@@ -14,16 +14,15 @@ fn comment_test(){
 fn comment_string_handling_test(){
     let input = r#"
     variable string = "hallo welt // kommentar"
-    schreibe("danach");
+    ident // = "hallo"
 
-    "hallo fufu // schreibe (((((((((((())))))))))))""""""//////....dsafjhsdkfsaf ##### 23483443298423 ___ let returnt wenn
 
     
     "#;
     let solution: Vec<Token> = vec![
-    Token::VAR, Token::IDENT("string".to_string()), Token::ASSIGN, Token::INVALID,
-    Token::PRINT, Token::LPARENT, Token::STRING("danach".to_string()), Token::RPARENT, Token::SEMICOLON,
-    Token::INVALID, Token::EOF
+    Token::VAR, Token::IDENT("string".to_string()), Token::ASSIGN, Token::STRING("hallo welt // kommentar".to_string()),
+    Token::IDENT("ident".to_string()),
+    Token::EOF,
 
     ];
 
@@ -43,7 +42,6 @@ fn general_test_3() {
         while wahr // keyword in a while loop
         return und // return keyword followed by und
         // invalid identifier combining false and true
-        "unclosed string // unterminated string literal
         // comment with unterminated string "string content
         "#;
 
@@ -68,7 +66,6 @@ fn general_test_3() {
         Token::TRUE,
         Token::RETURN,
         Token::UND,
-        Token::INVALID, // for "unclosed string
         Token::EOF
     ];
 

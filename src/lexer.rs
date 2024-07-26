@@ -216,12 +216,6 @@ impl Lexer {
         self.read_next_char();
 
         while self.current_char != b'"' && self.current_char != 0 {
-            if self.current_char == b'/' {
-                if self.peek_next_char() == b'/'{
-                    self.skip_comment();
-                    return Token::INVALID;
-                }
-            }
             self.read_next_char();
         }
 

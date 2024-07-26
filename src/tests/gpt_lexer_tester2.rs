@@ -1,4 +1,30 @@
 use crate::lexer::{Lexer, Token};
+
+fn comments(){
+    let input = r#"
+
+    "string"; // comment
+    "string // comment";
+    1234 // comment
+    123 // 234
+    ide//nt = 5;
+
+    "#;
+
+    let expected_tokens = vec![
+        Token::STRING("string".to_string()),
+        Token::SEMICOLON,
+        Token::STRING("string // comment".to_string()),
+        Token::SEMICOLON,
+        Token::INT("1234".to_string()),
+        Token::INT("123".to_string()),
+        Token::IDENT("ide".to_string()),
+        Token::EOF
+    ];
+    test_lexer(input, expected_tokens);
+}
+
+
 #[test]
 fn keywords_and_identifiers_test() {
     let input = r#"
@@ -137,7 +163,7 @@ fn test_lexer(input: &str, expected_tokens: Vec<Token>) {
     fn test_string_with_comment() {
         test_lexer(
             r#""string // comment""#,
-            vec![Token::INVALID, Token::EOF]
+            vec![Token::STRING("string // comment".to_string()), Token::EOF]
         );
     }
 

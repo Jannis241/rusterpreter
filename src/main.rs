@@ -23,9 +23,9 @@ fn main() {
     sonst {
         schreibe("der computer hat sich verrechnet, das richtige ergebnis ist: ", x + y);
     }
-    
+    let fufu "hallo//"
+    let fu// = hallo
     }
-
     
     "#;
     let mut lexer = lexer::Lexer::new(input.into());

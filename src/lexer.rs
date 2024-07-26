@@ -1,247 +1,241 @@
-use std::time::Instant;
+use std::process::exit;
 
-use crate::*;
+pub struct Lexer {
+    current_char: u8,
+    current_position: usize,
+    read_position: usize,
+    input: Vec<u8>,
+}
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
+    EOF,
+    INVALID,
+
     STRING(String),
-    NUM(f64),
-    PLUS(String),
-    MINUS(String),
-    MAL(String),
-    GETEILT(String),
-    VARIABLE(String),
-    LPARENT(String),
-    RPARENT(String),
-    LCURLY(String),
-    RCURLY(String),
-    LBRACKET(String),
-    RBRACKET(String),
-    DOPPELPUNKT(String),
-    KOMMA(String),
-    PUNKT(String),
-    PRINT(String),
-    GLEICH(String),
+    INT(String),
+    IDENT(String),
+
+    SEMICOLON,
+    COLON,
+    COMMA,
+    RPARENT,
+    LPARENT,
+    RCURLY,
+    LCURLY,
+    LBRACKET,
+    RBRACKET,
+
+    MINUS,
+    PLUS,
+    ASTERICS,
+    SLASH,
+    DOT,
+
+    EQUAL,
+    ASSIGN,
+
+    NOT_EQUAL,
+
+    LESS_THAN,
+    GREATER_THAN,
+    BANG,
+    HASHTAG,
+
+    LESS_OR_EQUAL,
+    GREATER_OR_EQUAL,
+
+    VAR,
+    FUNC,
+    IF,
+    ELSE,
+    RETURN,
+    PRINT,
+    WHILE,
+    TRUE,
+    FALSE,
+    ODER,
+    UND,
 
 }
 
-fn is_number(content: &String) -> Option<f64>{
-    
-    match content.parse::<f64>() {
-        Ok(_) => Some(content.parse::<f64>().unwrap_or(0.0)),
-        Err(_) => None,
+impl Lexer {
+    pub fn new(inp: String) -> Self {
+        let mut lex = Lexer {
+            current_char: 0,
+            current_position: 0,
+            read_position: 0,
+            input: inp.into_bytes(),
+        };
+        lex.read_next_char();
+        lex
     }
-}
 
-pub fn adjust_minus_tokens(token_list: &mut Vec<Token>) {
-    let mut i = 0;
-    let mut indices_to_remove = Vec::new();
-    let mut adjustments = Vec::new();
+    pub fn create_next_token(&mut self) -> Token {
+        self.skip_whitespaces();
 
-    // First pass: Collect information about which tokens to modify or remove
-    while i < token_list.len() {        
-        if let Token::MINUS(_) = token_list.get(i).unwrap() {
-            if let Some(next_token) = token_list.get(i + 1) {
-                if let Token::NUM(number) = next_token {
-                    if i == 0 {
-                        // The MINUS token is the first token
-                        indices_to_remove.push(i);
-                        adjustments.push((i, -number)); // Store index of NUM and its new value
-                    }
-                    else if let Some(previous_token) = token_list.get(i - 1) {
-                        if let Token::NUM(m) = previous_token {
-
-                        }
-                        else {
-                            indices_to_remove.push(i);
-                            adjustments.push((i, -number)); // Store index of NUM and its new value 
-                        }
-                    } 
+        let tok = match self.current_char {
+            b';' => Token::SEMICOLON,
+            b':' => Token::COLON,
+            b',' => Token::COMMA,
+            b'(' => Token::LPARENT,
+            b')' => Token::RPARENT,
+            b'{' => Token::LCURLY,
+            b'}' => Token::RCURLY,
+            b'[' => Token::LBRACKET,
+            b']' => Token::RBRACKET,
+            b'-' => Token::MINUS,
+            b'+' => Token::PLUS,
+            b'*' => Token::ASTERICS,
+            b'/' => {
+                if self.peek_next_char() == b'/' {
+                    self.skip_comment();
+                    return self.create_next_token();
+                } else {
+                    Token::SLASH
                 }
             }
-        }
-
-        i += 1;
-    }
-
-    for &index in indices_to_remove.iter().rev() {
-        token_list.remove(index);
-    }
-
-    for (num_index, new_value) in adjustments {
-        if let Some(token) = token_list.get_mut(num_index) {
-            *token = Token::NUM(new_value);
-        }
-    }
-}
-
-pub fn create_tokens (line: &String) -> Vec<Token>{
-    let mut token_list = Vec::new();
-    let mut i = 0;
-
-    while i < line.len(){
-        if line.starts_with("//"){
-            break // a comment has started so we can ignore the rest of the line
-        }
-
-        let current_char = line.chars().nth(i);
-
-        // einzelne char
-        if let Some(current_char) = current_char {
-            
-            // variablen
-            if current_char.is_alphabetic() || current_char == '_'{
-                let mut text = String::new();
-                
-                loop {
-                    if let Some(c) = line.chars().nth(i){
-
-                        if c.is_alphanumeric() || c == '_' && c != ' '{
-                            text.push(c);
-                            i += 1;
-                        }
-                        else {
-                            // var has ended
-                            break
-                        }
-                        
-                    }
-                    else {
-                        // end of line
-                        break 
-                    }
+            b'.' => Token::DOT,
+            b'=' => {
+                if self.peek_next_char() == b'=' {
+                    self.read_next_char();
+                    Token::EQUAL
+                } else {
+                    Token::ASSIGN
                 }
-
-                if text == String::from("schreibe"){
-                    token_list.push(Token::PRINT(String::from("schreibe")))
-
+            }
+            b'!' => {
+                if self.peek_next_char() == b'=' {
+                    self.read_next_char();
+                    Token::NOT_EQUAL
+                } else {
+                    Token::BANG
+                }
+            }
+            
+            b'<' => {
+                if self.peek_next_char() == b'=' {
+                    self.read_next_char();
+                    Token::LESS_OR_EQUAL
                 }
                 else {
-                    token_list.push(Token::VARIABLE(String::from(text)))
-
+                    Token::LESS_THAN
                 }
-
-                i -= 1; // minus 1 weil man hat ja noch einmal +1 gerechnet, aber dann wurden die chars unterbrochen, also
-                // muss man nochmal einen zurück gehen um an das richtige ende zu kommen da sonst der nächste char nach einer var
-                // oder einem string übersprungen wird
+            }            
+            b'>' => {
+                if self.peek_next_char() == b'=' {
+                    self.read_next_char();
+                    Token::GREATER_OR_EQUAL
+                }
+                else {
+                    Token::GREATER_THAN
+                }
+            } 
+            b'#' => Token::HASHTAG,
+            b'0'..=b'9' => self.lex_number(),
+            b'a' ..= b'z' | b'A' ..= b'Z' | b'_' => self.lex_identifier(),
+            b'"' => self.lex_string(),
+            0 => Token::EOF,
+            _ => {
+                println!("not implemented token found: {:?}", self.current_char as char);
+                exit(69)
             }
+        };
 
-            // strings
-            if current_char == '"'{
-                let mut string = String::new();
-                i += 1; // go to the char after the "
-                loop {
-                    if let Some(c) = line.chars().nth(i){
-                        if c == '"'{
-                            break // found the end of the string
-                        }
-                        else {
-                            string.push(c);
-                            i +=1 ;
-                        }
-                    }   
-
-                    else{
-                        break
-                    }
- 
-                }
-                token_list.push(Token::STRING(string));
-            }
-
-            // nums
-
-            if let Some(number) = is_number(&current_char.to_string()){
-                let mut num = String::new();
-                loop {
-                    if let Some(c) = line.chars().nth(i){ 
-                        if let Some(n) = is_number(&c.to_string()){
-                            let n = n.to_string();
-                            num.push(n.chars().nth(0).unwrap_or('e'));
-                            i+=1;
-                        }
-                        else {
-                            break
-                        }
-                    }
-                    else {
-                        break
-                    }
-                }
-                let num = is_number(&num);
-                if let Some(n) = num {
-                    token_list.push(Token::NUM(n));
-                }
-                i-= 1
-            }
-
-           
-
-            match current_char {
-                '=' => {
-                    token_list.push(Token::GLEICH(String::from("=")));
-                }
-                '+' => {
-                    token_list.push(Token::PLUS(String::from("+")))
-                }
-                '-' => {
-                    token_list.push(Token::MINUS(String::from("-")))
-                }
-                '/' => {
-                    token_list.push(Token::GETEILT(String::from("/")))
-                }
-                '*' => {
-                    token_list.push(Token::MAL(String::from("*")))
-                }
-                '(' => {
-
-                    token_list.push(Token::LPARENT(String::from("(")))
-                }
-                ')' => {
-
-                    token_list.push(Token::RPARENT(String::from(")")))
-                }
-                '{' => {
-                    token_list.push(Token::LCURLY(String::from("{")))
-
-                }
-                '}' => {
-                    token_list.push(Token::RCURLY(String::from("}")))
-
-                }
-                '[' => {
-                    token_list.push(Token::LBRACKET(String::from("[")))
-
-                }
-                ']' => {
-                    token_list.push(Token::RBRACKET(String::from("]")))
-
-                }
-                '.' => {
-                    token_list.push(Token::PUNKT(String::from(".")))
-
-                }
-                ',' => {
-                    token_list.push(Token::KOMMA(String::from(",")))
-
-                }
-                ':' => {
-                    token_list.push(Token::DOPPELPUNKT(String::from(":")))
-
-                }
-                _ => {}
-            }
-        }
-        // go to the next char
-        i += 1;
-
-
-
+        self.read_next_char();
+        tok
     }
 
-    adjust_minus_tokens(&mut token_list);
-    return token_list;
+    fn skip_whitespaces(&mut self) {
+        while self.current_char.is_ascii_whitespace(){
+            self.read_next_char();
+        }
+    }
 
+    fn peek_next_char(&self) -> u8 {
+        if self.read_position >= self.input.len() {
+            0
+        } else {
+            self.input[self.read_position]
+        }
+    }
 
+    fn read_next_char(&mut self) {
+        if self.read_position >= self.input.len() {
+            self.current_char = 0
+        } else {
+            self.current_char = self.input[self.read_position];
+        }
+        self.current_position += 1;
+        self.read_position += 1;
+    }
+
+    fn lex_number(&mut self) -> Token {
+        let start = self.current_position - 1;
+        while self.current_char.is_ascii_digit() {
+            self.read_next_char();
+        }
+        self.current_position -= 1;
+        self.read_position -= 1;
+        let num_str = String::from_utf8(self.input[start..self.current_position].to_vec()).unwrap();
+        Token::INT(num_str)
+    }
+
+    fn lex_identifier(&mut self) -> Token {
+        let start = self.current_position - 1;
+        while self.current_char.is_ascii_alphanumeric() || self.current_char == b'_' {
+            self.read_next_char();
+        }
+        self.current_position -= 1;
+        self.read_position -= 1;
+
+        
+
+        let ident_str = String::from_utf8(self.input[start..self.current_position].to_vec()).unwrap();
+        
+        let tok = match &ident_str[..]{
+            "variable" => Token::VAR,
+            "funktion" => Token::FUNC,
+            "wenn" => Token::IF,
+            "sonst" => Token::ELSE,
+            "schreibe" => Token::PRINT,
+            "while" =>Token::WHILE, 
+            "return" => Token::RETURN,
+            "falsch" => Token::FALSE,
+            "wahr" => Token::TRUE,
+            "und" => Token::UND,
+            "oder" => Token::ODER,
+            _ => Token::IDENT(ident_str)
+        };
+        return tok;
+    }
+    fn lex_string(&mut self) -> Token {
+        let startPos = self.current_position; // Start of the string content
+
+        // Skip the opening quote
+        self.read_next_char();
+
+        while self.current_char != b'"' && self.current_char != 0 {
+            if self.current_char == b'/' {
+                if self.peek_next_char() == b'/'{
+                    self.skip_comment();
+                    return Token::INVALID;
+                }
+            }
+            self.read_next_char();
+        }
+
+        if self.current_char == 0 {
+            return Token::INVALID; // Unclosed string literal
+        }
+
+        let string_content = String::from_utf8(self.input[startPos..self.current_position - 1].to_vec()).unwrap();
+        Token::STRING(string_content)
+    }
+    fn skip_comment(&mut self) {
+        while self.current_char != b'\n' && self.current_char != 0 {
+            self.read_next_char();
+        }
+    }
 }
 

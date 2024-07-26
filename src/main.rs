@@ -1,45 +1,16 @@
-use lexer::Token;
-
-#[cfg(test)]
-
-mod tests;
 mod lexer;
+mod file_reader;
+
+
+use crate::lexer::Lexer;
+
+
+
+
 
 
 fn main() {
-    let input = r#"
-
-    setze x auf 5;
-
-    setzte y auf 3;
-
-    schreibe: 
-
-    funktion add(x, y) {
-        return x + y
-    }
-
-    variable ergebnis = add(x + y);
-    schreibe("das hier ist das ergebnise: ", ergebnis);
-
-
-    wenn ergebnis == x + y {
-        schreibe("das ergebnis stimmt!");
-    }
-    sonst {
-        schreibe("der computer hat sich verrechnet, das richtige ergebnis ist: ", x + y);
-    }
-    let fufu "hallo//"
-    let fu// = hallo
-    }
-    
-    "#;
-    let mut lexer = lexer::Lexer::new(input.into());
-
-    while let tok = lexer.create_next_token() {
-        println!("{:?}", tok);
-        if tok == Token::EOF {
-            break;
-        }
-    }
+    let input = file_reader::get_input();
+    let tokens = Lexer::create_tokens(input.into());
+    println!("{:?}", tokens)
 }

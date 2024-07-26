@@ -32,6 +32,8 @@ pub enum Token {
     SLASH,
     DOT,
 
+    IST,
+    GLEICH,
     EQUAL,
     ASSIGN,
 
@@ -44,7 +46,7 @@ pub enum Token {
 
     LESS_OR_EQUAL,
     GREATER_OR_EQUAL,
-
+    
     VAR,
     FUNC,
     IF,
@@ -60,18 +62,31 @@ pub enum Token {
 }
 
 impl Lexer {
-    pub fn new(inp: String) -> Self {
+    pub fn create_tokens(inp: String) -> Vec<Token> {
         let mut lex = Lexer {
             current_char: 0,
             current_position: 0,
             read_position: 0,
             input: inp.into_bytes(),
         };
+
         lex.read_next_char();
-        lex
+        
+        let mut tokenList = Vec::new();
+        
+        loop {
+            let token = lex.create_next_token();
+            
+            if token == Token::EOF {
+                tokenList.push(token);
+                break;
+            }
+            tokenList.push(token);
+        }
+        tokenList
     }
 
-    pub fn create_next_token(&mut self) -> Token {
+    fn create_next_token(&mut self) -> Token {
         self.skip_whitespaces();
 
         let tok = match self.current_char {
@@ -96,14 +111,6 @@ impl Lexer {
                 }
             }
             b'.' => Token::DOT,
-            b'=' => {
-                if self.peek_next_char() == b'=' {
-                    self.read_next_char();
-                    Token::EQUAL
-                } else {
-                    Token::ASSIGN
-                }
-            }
             b'!' => {
                 if self.peek_next_char() == b'=' {
                     self.read_next_char();
@@ -140,9 +147,9 @@ impl Lexer {
                 println!("not implemented token found: {:?}", self.current_char as char);
                 exit(69)
             }
-        };
-
+        };       
         self.read_next_char();
+
         tok
     }
 
@@ -186,15 +193,14 @@ impl Lexer {
         while self.current_char.is_ascii_alphanumeric() || self.current_char == b'_' {
             self.read_next_char();
         }
+
         self.current_position -= 1;
         self.read_position -= 1;
 
-        
-
         let ident_str = String::from_utf8(self.input[start..self.current_position].to_vec()).unwrap();
-        
+
         let tok = match &ident_str[..]{
-            "variable" => Token::VAR,
+            "setze" => Token::VAR,
             "funktion" => Token::FUNC,
             "wenn" => Token::IF,
             "sonst" => Token::ELSE,
@@ -205,6 +211,10 @@ impl Lexer {
             "wahr" => Token::TRUE,
             "und" => Token::UND,
             "oder" => Token::ODER,
+            "auf" => Token::ASSIGN,
+            "gleich" => Token::GLEICH,
+            "ist" => Token::IST,
+            
             _ => Token::IDENT(ident_str)
         };
         return tok;

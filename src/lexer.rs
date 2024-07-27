@@ -6,15 +6,32 @@ pub struct Lexer {
     read_position: usize,
     input: Vec<u8>,
 }
+#[derive(PartialEq, Clone, Debug)]
+pub struct Token {
+    pub name: TokenName,
+    pub value: String,
+}
 
-#[derive(Debug, PartialEq)]
-pub enum Token {
+impl Token {
+    fn new(name: TokenName, value: &str) -> Self {
+        let value = value.to_string();
+        Token {
+            name,
+            value
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum TokenName {
+    EXPR,
+    STATEMENT,
     EOF,
     INVALID,
 
-    STRING(String),
-    INT(String),
-    IDENT(String),
+    STRING,
+    INT,
+    IDENT,
 
     SEMICOLON,
     COLON,
@@ -77,7 +94,7 @@ impl Lexer {
         loop {
             let token = lex.create_next_token();
             
-            if token == Token::EOF {
+            if token.name == TokenName::EOF {
                 tokenList.push(token);
                 break;
             }
@@ -90,59 +107,69 @@ impl Lexer {
         self.skip_whitespaces();
 
         let tok = match self.current_char {
-            b';' => Token::SEMICOLON,
-            b':' => Token::COLON,
-            b',' => Token::COMMA,
-            b'(' => Token::LPARENT,
-            b')' => Token::RPARENT,
-            b'{' => Token::LCURLY,
-            b'}' => Token::RCURLY,
-            b'[' => Token::LBRACKET,
-            b']' => Token::RBRACKET,
-            b'-' => Token::MINUS,
-            b'+' => Token::PLUS,
-            b'*' => Token::ASTERICS,
+            b';' => Token::new(TokenName::SEMICOLON, ";"),
+            b':' => Token::new(TokenName::COLON, ":"),
+            b',' => Token::new(TokenName::COMMA, ","),
+            b'(' => Token::new(TokenName::LPARENT, "("),
+            b')' => Token::new(TokenName::RPARENT, ")"),
+            b'{' => Token::new(TokenName::LCURLY, "{"),
+            b'}' => Token::new(TokenName::RCURLY, "}"),
+            b'[' => Token::new(TokenName::LBRACKET, "["),
+            b']' => Token::new(TokenName::RBRACKET, "]"),
+            b'-' => Token::new(TokenName::MINUS, "-"),
+            b'+' => Token::new(TokenName::PLUS, "+"),
+            b'*' => Token::new(TokenName::ASTERICS, "*"),
+            b'=' => {
+                if self.peek_next_char() == b'=' {
+                    self.read_next_char();
+                    Token::new(TokenName::EQUAL, "==")
+
+                }
+                else {
+                    Token::new(TokenName::ASSIGN, "=")
+                }
+            }
             b'/' => {
                 if self.peek_next_char() == b'/' {
                     self.skip_comment();
                     return self.create_next_token();
                 } else {
-                    Token::SLASH
+                    Token::new(TokenName::SLASH, "/")
                 }
             }
-            b'.' => Token::DOT,
+            b'.' => Token::new(TokenName::DOT, "."),
             b'!' => {
                 if self.peek_next_char() == b'=' {
                     self.read_next_char();
-                    Token::NOT_EQUAL
+                    Token::new(TokenName::NOT_EQUAL, "!=")
                 } else {
-                    Token::BANG
+                    Token::new(TokenName::BANG, "!")
                 }
             }
             
             b'<' => {
                 if self.peek_next_char() == b'=' {
                     self.read_next_char();
-                    Token::LESS_OR_EQUAL
+                    Token::new(TokenName::LESS_OR_EQUAL, "<=")
                 }
                 else {
-                    Token::LESS_THAN
+                    Token::new(TokenName::LESS_THAN, "<")
                 }
             }            
             b'>' => {
                 if self.peek_next_char() == b'=' {
                     self.read_next_char();
-                    Token::GREATER_OR_EQUAL
+                    Token::new(TokenName::GREATER_OR_EQUAL, ">=")
                 }
                 else {
-                    Token::GREATER_THAN
+                    Token::new(TokenName::GREATER_THAN, ">")
                 }
             } 
-            b'#' => Token::HASHTAG,
+            b'#' => Token::new(TokenName::HASHTAG, "#"),
             b'0'..=b'9' => self.lex_number(),
             b'a' ..= b'z' | b'A' ..= b'Z' | b'_' => self.lex_identifier(),
             b'"' => self.lex_string(),
-            0 => Token::EOF,
+            0 => Token::new(TokenName::EOF, "eof"),
             _ => {
                 println!("not implemented token found: {:?}", self.current_char as char);
                 exit(69)
@@ -179,13 +206,13 @@ impl Lexer {
 
     fn lex_number(&mut self) -> Token {
         let start = self.current_position - 1;
-        while self.current_char.is_ascii_digit() {
+        while self.current_char.is_ascii_digit() || self.current_char == b'.' || self.current_char == b',' {
             self.read_next_char();
         }
         self.current_position -= 1;
         self.read_position -= 1;
         let num_str = String::from_utf8(self.input[start..self.current_position].to_vec()).unwrap();
-        Token::INT(num_str)
+        Token::new(TokenName::INT, num_str.clone().as_str())
     }
 
     fn lex_identifier(&mut self) -> Token {
@@ -200,22 +227,20 @@ impl Lexer {
         let ident_str = String::from_utf8(self.input[start..self.current_position].to_vec()).unwrap();
 
         let tok = match &ident_str[..]{
-            "setze" => Token::VAR,
-            "funktion" => Token::FUNC,
-            "wenn" => Token::IF,
-            "sonst" => Token::ELSE,
-            "schreibe" => Token::PRINT,
-            "while" =>Token::WHILE, 
-            "return" => Token::RETURN,
-            "falsch" => Token::FALSE,
-            "wahr" => Token::TRUE,
-            "und" => Token::UND,
-            "oder" => Token::ODER,
-            "auf" => Token::ASSIGN,
-            "gleich" => Token::GLEICH,
-            "ist" => Token::IST,
+            "let" => Token::new(TokenName::VAR, "let"),
+            "fn" => Token::new(TokenName::FUNC, "fn"),
+            "if" => Token::new(TokenName::IF, "if"),
+            "else" => Token::new(TokenName::ELSE, "else"),
+            "print" => Token::new(TokenName::PRINT, "print"),
+            "while" => Token::new(TokenName::WHILE, "while"),
+            "return" => Token::new(TokenName::RETURN, "return"),
+            "false" => Token::new(TokenName::FALSE, "false"),
+            "true" => Token::new(TokenName::TRUE, "true"),
+            "and" => Token::new(TokenName::UND, "and"),
+            "or" => Token::new(TokenName::ODER, "or"),
+
             
-            _ => Token::IDENT(ident_str)
+            _ => Token::new(TokenName::IDENT, ident_str.clone().as_str())
         };
         return tok;
     }
@@ -230,11 +255,11 @@ impl Lexer {
         }
 
         if self.current_char == 0 {
-            return Token::INVALID; // Unclosed string literal
+            return Token::new(TokenName::INVALID, "invalid"); // Unclosed string literal
         }
 
         let string_content = String::from_utf8(self.input[startPos..self.current_position - 1].to_vec()).unwrap();
-        Token::STRING(string_content)
+        Token::new(TokenName::STRING, string_content.clone().as_str())
     }
     fn skip_comment(&mut self) {
         while self.current_char != b'\n' && self.current_char != 0 {

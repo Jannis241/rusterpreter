@@ -88,21 +88,24 @@ impl Parser {
         loop {
             for importance_level in &self.rules {
                 for rule in importance_level {
+                    println!("currently parsing {:?}", ast[self.position]);
                     let num_of_required_tokens = rule.token_names.len();
-    
+                    
                     let next_nodes: Vec<Node> = self.get_next_nodes(num_of_required_tokens, &ast);
     
                     let next_nodes_names: Vec<TokenName> = next_nodes.iter().map(|node| node.name.clone()).collect();
                     let next_tokens: Vec<Token> = next_nodes.iter().flat_map(|x| x.value.clone()).collect();
-    
+                    println!("next nodes names: {:?}", next_nodes_names);
+                    println!("rule names: {:?}", rule.token_names);
                     if next_nodes_names == rule.token_names {
-    
+                        println!("matched");
                         ast.drain(self.position .. self.position + num_of_required_tokens);
                         
                         ast.insert(self.position, Node::new(rule.result_type.clone(), next_tokens));
-    
-                        self.position += 1; // Update position by 1 instead of num_of_required_tokens
+                        self.position += 1; 
+                        
                     }
+                    println!("")
                 }
             }
     

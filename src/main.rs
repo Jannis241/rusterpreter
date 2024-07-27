@@ -4,19 +4,10 @@ mod file_reader;
 mod ast;
 
 use lexer::{Token, TokenName};
-
 use crate::lexer::Lexer;
 use crate::parser::Parser;
-fn string_eval (){
-    println!("string ist cool");
-}
 
-fn ident_eval (){
-    println!("ident ist cool");
-}
-fn int_eval (){
-    println!("int ist cool");
-}
+
 fn main() {
     let input = file_reader::get_input();
     

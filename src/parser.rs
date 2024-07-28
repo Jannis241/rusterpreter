@@ -1,32 +1,31 @@
 use core::num;
 use crate::lexer::*;
-use crate::ast;
+#[derive(Debug)]
+pub enum EvalValue {
+    Int(i64),
+    Float(f64),
+    String(String),
+    None,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Node {
-    name: TokenName,
-    value: Vec<Token>,
+    pub name: TokenName,
+    pub value: Vec<Node>,
+    pub token: Option<Token>, // optional token field for leaf nodes
 }
-
-
-
-
 
 impl Node {
-    fn new(name: TokenName, value: Vec<Token>) -> Self {
-        Node {
-            name,
-            value,
-        }
+    pub fn new(name: TokenName, value: Vec<Node>, token: Option<Token>) -> Self {
+        Node { name, value, token }
     }
+
+    // Eval function
     pub fn eval(&self) {
-        match self.name {
-            TokenName::STRING => ast::eval_string(self.clone()),
-            _ => {}
-                
-        }
+
     }
 }
+
 
 #[derive(Debug, Clone)]
 pub struct Rule {
@@ -35,7 +34,7 @@ pub struct Rule {
 }
 
 pub struct Parser {
-    tokens: Vec<Token>,  
+    tokens: Vec<Token>,
     rules: Vec<Vec<Rule>>,
     position: usize,
 }
@@ -49,78 +48,75 @@ impl Parser {
         }
     }
 
-    pub fn add_rule(&mut self, token_names: Vec<TokenName>, result_type: TokenName){
+    pub fn add_rule(&mut self, token_names: Vec<TokenName>, result_type: TokenName) {
         let rule = Rule {
             token_names,
             result_type,
         };
         let last_rule = self.rules.last_mut().unwrap();
-
         last_rule.push(rule);
-
     }
 
     pub fn decrease_importance(&mut self) {
         self.rules.push(vec![]);
     }
 
-    pub fn get_next_nodes(&self, anzahl: usize, ast: &Vec<Node>) -> Vec<Node> {
-        let end = if self.position + anzahl > self.tokens.len() {
-            self.tokens.len()
+    pub fn get_next_nodes(&self, count: usize, ast: &Vec<Node>) -> Vec<Node> {
+        let end = if self.position + count > ast.len() {
+            ast.len()
         } else {
-            self.position + anzahl
+            self.position + count
         };
-        let nodes = ast[self.position..end].to_vec();
-        nodes
+        ast[self.position..end].to_vec()
     }
-    
-    
 
-    pub fn parse(&mut self) -> Node { // return ast
+    pub fn parse(&mut self) -> Node {
         let mut ast: Vec<Node> = Vec::new();
-    
+
+        // Initialize the AST with token nodes
         for token in &self.tokens {
-            ast.push(Node::new(token.name.clone(), vec![token.clone()]));
+            ast.push(Node::new(token.name.clone(), vec![], Some(token.clone())));
         }
-    
-        let mut last_ast: Vec<Node> = Vec::new();
-    
-        loop {
+
+        let mut progress = true;
+        
+        while progress {
+            progress = false;
             for importance_level in &self.rules {
-                for rule in importance_level {
-                    println!("currently parsing {:?}", ast[self.position]);
-                    let num_of_required_tokens = rule.token_names.len();
-                    
-                    let next_nodes: Vec<Node> = self.get_next_nodes(num_of_required_tokens, &ast);
-    
-                    let next_nodes_names: Vec<TokenName> = next_nodes.iter().map(|node| node.name.clone()).collect();
-                    let next_tokens: Vec<Token> = next_nodes.iter().flat_map(|x| x.value.clone()).collect();
-                    println!("next nodes names: {:?}", next_nodes_names);
-                    println!("rule names: {:?}", rule.token_names);
-                    if next_nodes_names == rule.token_names {
-                        println!("matched");
-                        ast.drain(self.position .. self.position + num_of_required_tokens);
-                        
-                        ast.insert(self.position, Node::new(rule.result_type.clone(), next_tokens));
-                        self.position += 1; 
-                        
+                self.position = 0;
+                while self.position < ast.len() {
+                    for rule in importance_level {
+                        let num_of_required_tokens = rule.token_names.len();
+
+                        // Get the next nodes according to the rule length
+                        let next_nodes: Vec<Node> = self.get_next_nodes(num_of_required_tokens, &ast);
+                        let next_nodes_names: Vec<TokenName> = next_nodes.iter().map(|node| node.name.clone()).collect();
+
+                        if next_nodes_names == rule.token_names {
+                            // Use the nodes directly to preserve the structure
+                            let next_node_values: Vec<Node> = next_nodes.clone();
+
+                            // Remove the old nodes and insert the new combined node
+                            ast.drain(self.position..self.position + num_of_required_tokens);
+                            ast.insert(self.position, Node::new(rule.result_type.clone(), next_node_values.clone(), None));
+                            progress = true;
+                            break;
+                        }
                     }
-                    println!("")
+
+                    if !progress {
+                        self.position += 1;
+                    } else {
+                        break;
+                    }
+                }
+
+                if progress {
+                    break;
                 }
             }
-    
-            if ast == last_ast {
-                break;
-            }
-    
-            last_ast = ast.clone();
         }
 
-        for node in ast.clone() {
-            println!("{:?}", node);
-        }
-        
         ast[0].clone()
     }
-     
 }

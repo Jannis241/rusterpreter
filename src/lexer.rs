@@ -202,6 +202,7 @@ impl Lexer {
         }
         self.current_position += 1;
         self.read_position += 1;
+        
     }
 
     fn lex_number(&mut self) -> Token {

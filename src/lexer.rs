@@ -24,8 +24,20 @@ impl Token {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenName {
+
+    // für den parser
     EXPR,
     STATEMENT,
+    PARENTS,
+    MULTIPLICATION,
+    DIVISION,
+    ADD,
+    SUBTRACT,
+
+
+
+
+    // lexer
     EOF,
     INVALID,
 

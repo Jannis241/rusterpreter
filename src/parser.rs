@@ -13,6 +13,8 @@ pub struct Node {
     pub name: TokenName,
     pub value: Vec<Node>,
     pub token: Option<Token>, // optional token field for leaf nodes
+    pub node_type: TokenName,
+
 }
 impl fmt::Debug for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -22,8 +24,8 @@ impl fmt::Debug for Node {
     }
 }
 impl Node {
-    pub fn new(name: TokenName, value: Vec<Node>, token: Option<Token>) -> Self {
-        Node { name, value, token }
+    pub fn new(name: TokenName, value: Vec<Node>, token: Option<Token>, node_type: TokenName) -> Self {
+        Node { name, value, token , node_type}
     }
     fn fmt_with_indent(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
         let indent_str = "    ".repeat(indent);
@@ -38,13 +40,22 @@ impl Node {
         write!(f, "{}],\n", indent_str)?;
         
         write!(f, "{}token: {:?}\n", indent_str, self.token)?;
+        write!(f, "{}node type: {:?}\n", indent_str, self.node_type)?;
 
         Ok(())
     }
 
     // Eval function
-    pub fn eval(&self) {
+    pub fn eval(&self) -> EvalValue{
+        println!("eval function called on {:?}", self.name.clone());
+        match self.name {
 
+            
+            _ => {
+                println!("didnt match any");
+                EvalValue::None
+            }
+        }
     }
 }
 
@@ -53,6 +64,7 @@ impl Node {
 pub struct Rule {
     token_names: Vec<TokenName>,
     result_type: TokenName,
+    node_type: TokenName,
 }
 
 pub struct Parser {
@@ -70,10 +82,11 @@ impl Parser {
         }
     }
 
-    pub fn add_rule(&mut self, token_names: Vec<TokenName>, result_type: TokenName) {
+    pub fn add_rule(&mut self, token_names: Vec<TokenName>, result_type: TokenName, node_type: TokenName) {
         let rule = Rule {
             token_names,
             result_type,
+            node_type,
         };
         let last_rule = self.rules.last_mut().unwrap();
         last_rule.push(rule);
@@ -97,7 +110,7 @@ impl Parser {
 
         // Initialize the AST with token nodes
         for token in &self.tokens {
-            ast.push(Node::new(token.name.clone(), vec![], Some(token.clone())));
+            ast.push(Node::new(token.name.clone(), vec![], Some(token.clone()), token.name.clone()));
         }
 
         let mut progress = true;
@@ -120,7 +133,21 @@ impl Parser {
 
                             // Remove the old nodes and insert the new combined node
                             ast.drain(self.position..self.position + num_of_required_tokens);
-                            ast.insert(self.position, Node::new(rule.result_type.clone(), next_node_values.clone(), None));
+                            
+                            ast.insert(
+                                self.position, 
+
+                                Node::new(
+
+                                    rule.result_type.clone(), 
+                                    next_node_values.clone(), 
+                                    None, // Todo: falls es nur ein einzelnes token ist wie int muss das hier in und nicht in die value
+                                    rule.node_type.clone(),
+                                    
+                                ));
+                            
+                            
+                            
                             progress = true;
                             break;
                         }

@@ -1,8 +1,4 @@
-use std::{env, process::exit};
-use std::fs::{self, read};
-
-
-
+use crate::*;
 
 fn get_file_name() -> String{
     let mut file_name: Vec<String> = env::args().collect();
@@ -17,7 +13,7 @@ fn read_file(filename: String) -> String{
 
     match content {
         Ok(content) => content,
-        Err(e) => {
+        Err(_e) => {
             println!("DD: file not found");
             exit(69)
         }

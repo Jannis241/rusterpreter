@@ -1,7 +1,5 @@
-use core::num;
-use std::fmt;
+use crate::*;
 
-use crate::lexer::*;
 #[derive(Debug)]
 pub enum EvalValue {
     Int(i64),

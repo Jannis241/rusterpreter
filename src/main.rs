@@ -1,12 +1,19 @@
-// main.rs
 
-mod lexer;
-mod parser;
-mod file_reader;
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 
 
-use lexer::{Token, TokenName, Lexer};
-use parser::Parser;
+pub mod lexer;
+pub mod parser;
+pub mod file_reader;
+
+use crate::lexer::*;
+use crate::parser::*;
+
+use std::fmt;
+use std::process::exit;
+use std::env;
+use std::fs;
 
 fn main() {
     let input = file_reader::get_input();

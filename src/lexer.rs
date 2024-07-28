@@ -1,4 +1,4 @@
-use std::process::exit;
+use crate::*;
 
 pub struct Lexer {
     current_char: u8,

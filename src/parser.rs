@@ -1,4 +1,6 @@
 use core::num;
+use std::fmt;
+
 use crate::lexer::*;
 #[derive(Debug)]
 pub enum EvalValue {
@@ -8,16 +10,38 @@ pub enum EvalValue {
     None,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Node {
     pub name: TokenName,
     pub value: Vec<Node>,
     pub token: Option<Token>, // optional token field for leaf nodes
 }
-
+impl fmt::Debug for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Node {{\n")?;
+        self.fmt_with_indent(f, 1)?;
+        write!(f, "}}\n")
+    }
+}
 impl Node {
     pub fn new(name: TokenName, value: Vec<Node>, token: Option<Token>) -> Self {
         Node { name, value, token }
+    }
+    fn fmt_with_indent(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+        let indent_str = "    ".repeat(indent);
+        write!(f, "{}name: {:?},\n", indent_str, self.name)?;
+        
+        write!(f, "{}value: [\n", indent_str)?;
+        for node in &self.value {
+            write!(f, "{}    Node {{\n", indent_str)?;
+            node.fmt_with_indent(f, indent + 2)?;
+            write!(f, "{}    }},\n", indent_str)?;
+        }
+        write!(f, "{}],\n", indent_str)?;
+        
+        write!(f, "{}token: {:?}\n", indent_str, self.token)?;
+
+        Ok(())
     }
 
     // Eval function
@@ -70,7 +94,7 @@ impl Parser {
         ast[self.position..end].to_vec()
     }
 
-    pub fn parse(&mut self) -> Node {
+    pub fn parse(&mut self) -> Vec<Node> {
         let mut ast: Vec<Node> = Vec::new();
 
         // Initialize the AST with token nodes
@@ -117,6 +141,6 @@ impl Parser {
             }
         }
 
-        ast[0].clone()
+        ast.clone()
     }
 }

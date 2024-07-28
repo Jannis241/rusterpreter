@@ -11,7 +11,7 @@ use parser::Parser;
 fn main() {
     let input = file_reader::get_input();
     let tokens = Lexer::create_tokens(input.into());
-    println!("tokens: {:?}", tokens);
+
     let mut parser = Parser::new(tokens);
     parser.add_rule(vec![TokenName::INT], TokenName::EXPR);
     parser.add_rule(vec![TokenName::IDENT], TokenName::EXPR);
@@ -31,11 +31,13 @@ fn main() {
     
     parser.decrease_importance();
 
-    parser.add_rule(vec![TokenName::PRINT, TokenName::COLON, TokenName::EXPR], TokenName::STATEMENT);
-    parser.add_rule(vec![TokenName::EXPR, TokenName::ASSIGN, TokenName::EXPR], TokenName::STATEMENT);
+    parser.add_rule(vec![TokenName::PRINT, TokenName::LPARENT, TokenName::EXPR, TokenName::RPARENT, TokenName::SEMICOLON], TokenName::STATEMENT);
+    parser.add_rule(vec![TokenName::VAR, TokenName::EXPR, TokenName::ASSIGN, TokenName::EXPR, TokenName::SEMICOLON], TokenName::STATEMENT);
     
     let ast = parser.parse();
-    ast.eval();
+    for line in ast.clone() {
+        line.eval();
+    }
     println!("");
     println!("{:?}", ast);
     

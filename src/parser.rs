@@ -47,12 +47,17 @@ impl Node {
 
     // Eval function
     pub fn eval(&self) -> EvalValue{
-        println!("eval function called on {:?}", self.name.clone());
-        match self.name {
-
-            
+        println!("------------------------");
+        println!("eval function called on {:?}", self.node_type.clone());
+        match self.node_type {
+            TokenName::PRINT => ast::eval_print(self.clone()),
+            TokenName::ADD => ast::eval_add(self.clone()),
+            TokenName::SUBTRACT => ast::eval_subtract(self.clone()),
+            TokenName::INT => ast::eval_int(self.clone()),
+            TokenName::DIVISION => ast::eval_divide(self.clone()),
+            TokenName::MULTIPLICATION => ast::eval_multiply(self.clone()),
             _ => {
-                println!("didnt match any");
+                println!("Didnt match anything..");
                 EvalValue::None
             }
         }

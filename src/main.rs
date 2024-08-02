@@ -10,7 +10,6 @@ pub mod ast;
 
 use crate::lexer::*;
 use crate::parser::*;
-use crate::ast::*;
 
 use std::fmt;
 use std::process::exit;
